@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Stop the Light</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #fdf3e0;
+        --bg-soft: #f7e7c8;
+        --cabinet: #2b1a12;
+        --cabinet-2: #3a2417;
+        --ink: #2b1a12;
+        --ink-soft: #6d5138;
+        --card: #fffaf0;
+        --line: #e3cfa5;
+        --amber: #f5a623;
+        --amber-deep: #d9830d;
+        --red: #d63a2f;
+        --red-deep: #a8231b;
+        --gold: #ffc61a;
+        --teal: #0e9f8a;
+        --bulb-off: #574433;
+        --shadow: 0 10px 30px rgba(90, 55, 10, .18);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #17100b;
+          --bg-soft: #211710;
+          --cabinet: #241610;
+          --cabinet-2: #2f1d13;
+          --ink: #f7e9cf;
+          --ink-soft: #c8ab84;
+          --card: #241810;
+          --line: #4a3220;
+          --bulb-off: #4c3826;
+          --shadow: 0 10px 30px rgba(0, 0, 0, .5);
+        }
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        -webkit-tap-highlight-color: transparent;
+      }
+      .wrap { max-width: 540px; margin: 0 auto; padding: 14px 14px 34px; }
+      .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+      .home-pill {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: var(--cabinet); color: #ffe9bd; text-decoration: none;
+        font-weight: 800; font-size: 14px; padding: 8px 14px; border-radius: 999px;
+        box-shadow: var(--shadow);
+      }
+      .mute-btn {
+        border: 2px solid var(--line); background: var(--card); color: var(--ink);
+        border-radius: 999px; padding: 7px 13px; font: inherit; font-weight: 800; font-size: 14px; cursor: pointer;
+      }
+      h1 {
+        font-family: "Bungee", "Arial Black", sans-serif; font-weight: 400;
+        font-size: clamp(30px, 8.5vw, 44px); line-height: 1.05; text-align: center;
+        margin: 16px 0 4px; color: var(--ink); letter-spacing: .5px;
+      }
+      h1 .lit { color: var(--red); }
+      .tagline { text-align: center; color: var(--ink-soft); font-weight: 700; margin: 0 0 16px; font-size: 15px; }
+      .tabs { display: flex; gap: 8px; background: var(--bg-soft); border: 2px solid var(--line); border-radius: 16px; padding: 6px; margin-bottom: 16px; }
+      .tab {
+        flex: 1; border: 0; border-radius: 11px; padding: 12px 6px; cursor: pointer;
+        font: inherit; font-weight: 900; font-size: 16px; background: transparent; color: var(--ink-soft);
+      }
+      .tab[aria-selected="true"] { background: var(--cabinet); color: #ffe9bd; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+      .cabinet {
+        background: var(--cabinet); border-radius: 26px; padding: 18px 16px 20px;
+        box-shadow: var(--shadow); color: #ffe9bd;
+        border: 3px solid #17100b;
+      }
+      .hud { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+      .hud .cell { flex: 1; background: var(--cabinet-2); border-radius: 12px; padding: 8px 6px; text-align: center; border: 1px solid rgba(255, 233, 189, .14); }
+      .hud .label { font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; color: #c8ab84; }
+      .hud .value { font-family: "Bungee", "Arial Black", sans-serif; font-size: 22px; line-height: 1.15; color: #ffe9bd; }
+      .tries { font-size: 17px; letter-spacing: 2px; line-height: 1.35; }
+      .tries .lost { opacity: .22; filter: grayscale(1); }
+
+      /* ---------- Stop the Light ring ---------- */
+      .ring-zone { position: relative; }
+      .ring {
+        position: relative; width: 100%; aspect-ratio: 1 / 1; max-width: 460px; margin: 0 auto;
+        border-radius: 50%;
+        background: radial-gradient(circle at 50% 42%, #40291a 0%, #2b1a12 68%, #20130c 100%);
+        border: 3px solid rgba(255, 233, 189, .12);
+        touch-action: manipulation; cursor: pointer;
+      }
+      .bulb {
+        position: absolute; width: 6.4%; aspect-ratio: 1 / 1; border-radius: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--bulb-off);
+        border: 2px solid rgba(0,0,0,.45);
+        transition: none;
+      }
+      .bulb.zone { background: #7a5a17; border-color: #ffc61a; box-shadow: 0 0 7px rgba(255, 198, 26, .45); }
+      .ring-center {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        width: 56%; text-align: center; pointer-events: none; padding: 0 4px;
+      }
+      .ring-center .big {
+        font-family: "Bungee", "Arial Black", sans-serif; font-size: clamp(19px, 5.6vw, 27px);
+        line-height: 1.2; color: #ffe9bd; text-shadow: 0 2px 0 rgba(0,0,0,.4);
+      }
+      .ring-center .small { font-weight: 800; font-size: clamp(13px, 3.8vw, 15px); color: #e8cd97; margin-top: 6px; line-height: 1.35; }
+      .zone-tag {
+        display: inline-block; margin-top: 10px; background: rgba(255, 198, 26, .14);
+        border: 1.5px solid #ffc61a; color: #ffd94d; border-radius: 999px;
+        font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; padding: 4px 10px;
+      }
+      .banner {
+        min-height: 30px; text-align: center; font-family: "Bungee", "Arial Black", sans-serif;
+        font-size: clamp(17px, 5vw, 21px); color: var(--gold); margin: 14px 0 4px; line-height: 1.25;
+      }
+      .verdict { min-height: 24px; text-align: center; font-weight: 900; font-size: 16px; color: #ffe9bd; margin: 2px 0 12px; }
+      .verdict.good { color: #7be3a8; }
+      .verdict.bad { color: #ff9a8a; }
+      .stop-btn {
+        display: block; width: 100%; border: 0; cursor: pointer; border-radius: 20px;
+        padding: 22px 10px 20px; font-family: "Bungee", "Arial Black", sans-serif;
+        font-size: clamp(26px, 7.5vw, 34px); letter-spacing: .04em; color: #fff;
+        background: var(--red); box-shadow: 0 7px 0 var(--red-deep), 0 14px 26px rgba(0,0,0,.4);
+        touch-action: manipulation; user-select: none; -webkit-user-select: none;
+      }
+      .stop-btn:active { transform: translateY(4px); box-shadow: 0 3px 0 var(--red-deep), 0 8px 16px rgba(0,0,0,.4); }
+      .stop-btn.go { background: var(--teal); box-shadow: 0 7px 0 #076454, 0 14px 26px rgba(0,0,0,.4); }
+      .stop-btn.go:active { box-shadow: 0 3px 0 #076454, 0 8px 16px rgba(0,0,0,.4); }
+      .stop-btn:disabled { opacity: .55; cursor: default; }
+      .hint { text-align: center; color: #c8ab84; font-weight: 700; font-size: 13.5px; margin: 12px 0 0; }
+      .over-panel {
+        display: none; margin-top: 16px; background: var(--cabinet-2); border: 2px solid var(--gold);
+        border-radius: 18px; padding: 16px; text-align: center;
+      }
+      .over-panel.show { display: block; }
+      .over-panel .title { font-family: "Bungee", "Arial Black", sans-serif; font-size: 24px; color: var(--gold); margin-bottom: 6px; }
+      .over-panel p { margin: 4px 0; font-weight: 800; color: #ffe9bd; }
+      .again-btn {
+        margin-top: 10px; border: 0; cursor: pointer; border-radius: 14px; padding: 13px 26px;
+        font: inherit; font-weight: 900; font-size: 17px; background: var(--amber); color: #2b1a12;
+        box-shadow: 0 4px 0 var(--amber-deep);
+      }
+      .again-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--amber-deep); }
+
+      /* ---------- Skee-Ball ---------- */
+      .lane-wrap { position: relative; width: 100%; max-width: 400px; margin: 0 auto; }
+      canvas#lane { display: block; width: 100%; height: auto; border-radius: 18px; background: #40291a; touch-action: none; cursor: pointer; }
+      .power-row { display: flex; align-items: center; gap: 10px; margin: 14px 0 4px; }
+      .power-row .label { font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; color: #c8ab84; white-space: nowrap; }
+      .power-track { flex: 1; height: 18px; border-radius: 999px; background: var(--cabinet-2); border: 1px solid rgba(255,233,189,.16); overflow: hidden; }
+      .power-fill { height: 100%; width: 0%; background: var(--amber); border-radius: 999px; }
+      .power-fill.hot { background: var(--red); }
+      .balls-left { font-size: 15px; letter-spacing: 1.5px; }
+      .balls-left .used { opacity: .2; filter: grayscale(1); }
+
+      .howto { margin-top: 18px; background: var(--card); border: 2px solid var(--line); border-radius: 18px; padding: 15px 17px; }
+      .howto h2 { font-family: "Bungee", "Arial Black", sans-serif; font-weight: 400; font-size: 17px; margin: 0 0 8px; }
+      .howto p { margin: 6px 0; font-size: 14.5px; line-height: 1.5; color: var(--ink); font-weight: 600; }
+      .howto .pts { color: var(--ink-soft); font-size: 13.5px; }
+      .hidden { display: none !important; }
+      footer { text-align: center; color: var(--ink-soft); font-weight: 700; font-size: 13px; margin-top: 18px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="topbar">
+        <a class="home-pill" href="https://jesuslovestyler.com/">⌂ Home</a>
+        <button class="mute-btn" id="muteBtn" type="button" aria-pressed="false">🔊 Sound on</button>
+      </div>
+
+      <h1>STOP THE <span class="lit">LIGHT</span></h1>
+      <p class="tagline">Two arcade classics — freeze the racing light in the gold zone, then roll for the 50 in Skee-Ball.</p>
+
+      <div class="tabs" role="tablist" aria-label="Choose a game">
+        <button class="tab" id="tabLight" role="tab" aria-selected="true" type="button">💡 Stop the Light</button>
+        <button class="tab" id="tabSkee" role="tab" aria-selected="false" type="button">🎳 Skee-Ball</button>
+      </div>
+
+      <!-- ================= STOP THE LIGHT ================= -->
+      <section id="panelLight">
+        <div class="cabinet">
+          <div class="hud">
+            <div class="cell"><div class="label">Score</div><div class="value" id="stlScore">0</div></div>
+            <div class="cell"><div class="label">Round</div><div class="value" id="stlRound">1</div></div>
+            <div class="cell"><div class="label">Tries left</div><div class="tries" id="stlTries">🎟️🎟️🎟️</div></div>
+            <div class="cell"><div class="label">Best</div><div class="value" id="stlBest">0</div></div>
+          </div>
+
+          <div class="ring-zone">
+            <div class="ring" id="ring" role="button" aria-label="Tap the ring to stop the light" tabindex="0">
+              <div class="ring-center">
+                <div class="big" id="ringBig">Ready?</div>
+                <div class="small" id="ringSmall">Stop the light on a gold bulb at the top.</div>
+                <span class="zone-tag" id="zoneTag">Jackpot zone · 3 bulbs</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="banner" id="stlBanner"></div>
+          <div class="verdict" id="stlVerdict">Clear a round to score — round 1 pays 100.</div>
+          <button class="stop-btn go" id="stopBtn" type="button">▶ GO</button>
+          <p class="hint">Tap STOP, tap the ring, or press Space. Land on gold to clear the round — every round races faster, and the gold zone shrinks.</p>
+
+          <div class="over-panel" id="stlOver">
+            <div class="title">Game Over</div>
+            <p id="stlFinalScore">Final score: 0</p>
+            <p id="stlFinalRounds">Rounds cleared: 0</p>
+            <p id="stlFinalBest">Best score: 0</p>
+            <button class="again-btn" id="stlAgain" type="button">Play Again</button>
+          </div>
+        </div>
+
+        <div class="howto">
+          <h2>How it scores</h2>
+          <p>One light races around the ring of 48 bulbs. Freeze it on a <strong>gold bulb</strong> at the top to clear the round.</p>
+          <p>Clearing round N pays <strong>N × 100 points</strong>. You have <strong>3 tries</strong> per game — a miss costs one, and the game tells you exactly how many bulbs away you landed.</p>
+          <p class="pts">Rounds 1–4: gold zone is 3 bulbs · Rounds 5–7: 2 bulbs · Round 8 and up: a single bulb. The light starts at 1.2 laps a second and speeds up every round.</p>
+        </div>
+      </section>
+
+      <!-- ================= SKEE-BALL ================= -->
+      <section id="panelSkee" class="hidden">
+        <div class="cabinet">
+          <div class="hud">
+            <div class="cell"><div class="label">Score</div><div class="value" id="skScore">0</div></div>
+            <div class="cell"><div class="label">Ball</div><div class="value" id="skBallNum">1 / 9</div></div>
+            <div class="cell"><div class="label">Balls</div><div class="balls-left" id="skBalls">🔴🔴🔴🔴🔴🔴🔴🔴🔴</div></div>
+            <div class="cell"><div class="label">Best</div><div class="value" id="skBest">0</div></div>
+          </div>
+
+          <div class="lane-wrap">
+            <canvas id="lane" width="400" height="560" aria-label="Skee-Ball lane. Press and hold to charge power, slide to aim, release to roll."></canvas>
+          </div>
+
+          <div class="power-row">
+            <span class="label">Power</span>
+            <div class="power-track"><div class="power-fill" id="powerFill"></div></div>
+          </div>
+          <div class="verdict" id="skVerdict">Hold on the lane to charge, slide to aim, let go to roll.</div>
+          <button class="stop-btn go" id="skNew" type="button">↺ NEW GAME</button>
+          <p class="hint">Too soft and the ball drops short of the rings. Too hard and it smacks the back wall. The 50 lives in the middle — and the corner pockets pay 100.</p>
+
+          <div class="over-panel" id="skOver">
+            <div class="title">Game Over</div>
+            <p id="skFinalScore">Final score: 0</p>
+            <p id="skFinalBest">Best score: 0</p>
+            <button class="again-btn" id="skAgain" type="button">Play Again</button>
+          </div>
+        </div>
+
+        <div class="howto">
+          <h2>How it scores</h2>
+          <p>Nine balls per game. Roll up the lane and hop into the rings: <strong>50</strong> in the bullseye, then 40, 30, 20, and 10 in the outer ring.</p>
+          <p class="pts">Clip one of the two corner pockets at the top for <strong>100</strong>. A great game lands north of 300.</p>
+        </div>
+      </section>
+
+      <footer>Play money: none. Just you, the light, and the lane.</footer>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        /* ================= shared audio ================= */
+        var audioCtx = null;
+        var muted = false;
+        function ac() {
+          if (!audioCtx) {
+            var AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return null;
+            audioCtx = new AC();
+          }
+          if (audioCtx.state === "suspended") audioCtx.resume();
+          return audioCtx;
+        }
+        function tone(freq, t0, dur, type, vol, slideTo) {
+          if (muted) return;
+          var ctx = ac(); if (!ctx) return;
+          var o = ctx.createOscillator(), g = ctx.createGain();
+          var start = ctx.currentTime + t0;
+          o.type = type || "sine";
+          o.frequency.setValueAtTime(freq, start);
+          if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, start + dur);
+          g.gain.setValueAtTime(0.0001, start);
+          g.gain.exponentialRampToValueAtTime(vol || 0.08, start + 0.012);
+          g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+          o.connect(g); g.connect(ctx.destination);
+          o.start(start); o.stop(start + dur + 0.05);
+        }
+        function tickSound() { tone(1180, 0, 0.05, "square", 0.03); }
+        function winSound() {
+          tone(523.25, 0, 0.13, "triangle", 0.09);
+          tone(659.25, 0.09, 0.13, "triangle", 0.09);
+          tone(783.99, 0.18, 0.13, "triangle", 0.09);
+          tone(1046.5, 0.27, 0.3, "triangle", 0.1);
+        }
+        function missSound() { tone(196, 0, 0.28, "sawtooth", 0.05, 130); tone(147, 0.05, 0.3, "sawtooth", 0.04, 98); }
+        function thockSound() { tone(240, 0, 0.07, "sine", 0.1, 120); }
+
+        var muteBtn = document.getElementById("muteBtn");
+        muteBtn.addEventListener("click", function () {
+          muted = !muted;
+          muteBtn.textContent = muted ? "🔇 Sound off" : "🔊 Sound on";
+          muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+          if (!muted) ac();
+        });
+
+        /* ================= tabs ================= */
+        var tabLight = document.getElementById("tabLight"), tabSkee = document.getElementById("tabSkee");
+        var panelLight = document.getElementById("panelLight"), panelSkee = document.getElementById("panelSkee");
+        function showGame(which) {
+          var light = which === "light";
+          panelLight.classList.toggle("hidden", !light);
+          panelSkee.classList.toggle("hidden", light);
+          tabLight.setAttribute("aria-selected", light ? "true" : "false");
+          tabSkee.setAttribute("aria-selected", light ? "false" : "true");
+          if (!light) { STL.pause(); drawLane(); }
+        }
+        tabLight.addEventListener("click", function () { showGame("light"); });
+        tabSkee.addEventListener("click", function () { showGame("skee"); });
+
+        /* =========================================================
+           STOP THE LIGHT
+           - 48 bulbs, index 0 at the top, clockwise.
+           - Position is a float in bulb units, advanced ONLY from
+             requestAnimationFrame timestamps (real elapsed time).
+           - A stop reads the bulb nearest the true float position
+             at the tap instant. Nothing is adjusted after the tap.
+           ========================================================= */
+        var STL = (function () {
+          var N = 48;
+          var ringEl = document.getElementById("ring");
+          var scoreEl = document.getElementById("stlScore");
+          var roundEl = document.getElementById("stlRound");
+          var triesEl = document.getElementById("stlTries");
+          var bestEl = document.getElementById("stlBest");
+          var bigEl = document.getElementById("ringBig");
+          var smallEl = document.getElementById("ringSmall");
+          var zoneTagEl = document.getElementById("zoneTag");
+          var bannerEl = document.getElementById("stlBanner");
+          var verdictEl = document.getElementById("stlVerdict");
+          var stopBtn = document.getElementById("stopBtn");
+          var overEl = document.getElementById("stlOver");
+          var finalScoreEl = document.getElementById("stlFinalScore");
+          var finalRoundsEl = document.getElementById("stlFinalRounds");
+          var finalBestEl = document.getElementById("stlFinalBest");
+
+          var bulbs = [];
+          for (var i = 0; i < N; i++) {
+            var b = document.createElement("div");
+            b.className = "bulb";
+            var ang = (i / N) * Math.PI * 2 - Math.PI / 2;
+            b.style.left = (50 + 44 * Math.cos(ang)) + "%";
+            b.style.top = (50 + 44 * Math.sin(ang)) + "%";
+            ringEl.appendChild(b);
+            bulbs.push(b);
+          }
+
+          var best = 0;
+          try { best = parseInt(localStorage.getItem("stopTheLightBest") || "0", 10) || 0; } catch (e) { best = 0; }
+
+          var state = "ready"; // ready | running | celebrate | between | over
+          var round = 1, score = 0, tries = 3, roundsCleared = 0;
+          var posTotal = 0;        // float bulb units, ever-increasing while running
+          var lastTs = null, rafId = null, lastRev = 0;
+          var stoppedIdx = -1, chaseTimer = null, resumeTimer = null, overPending = false;
+
+          function speedFor(r) { return 1.2 + (r - 1) * 0.28; } // revolutions per second
+          function zoneSizeFor(r) { return r >= 8 ? 1 : (r >= 5 ? 2 : 3); }
+          function zoneSet(r) {
+            var s = zoneSizeFor(r), set = [];
+            for (var k = 0; k < s; k++) set.push(k); // starts at top bulb 0, clockwise
+            if (s === 3) set = [N - 1, 0, 1];        // centered on the top
+            return set;
+          }
+          function circDist(a, b) { var d = Math.abs(a - b) % N; return Math.min(d, N - d); }
+          function distToZone(idx, r) {
+            var set = zoneSet(r), m = Infinity;
+            for (var k = 0; k < set.length; k++) m = Math.min(m, circDist(idx, set[k]));
+            return m;
+          }
+
+          function renderHud() {
+            scoreEl.textContent = score;
+            roundEl.textContent = round;
+            bestEl.textContent = best;
+            var t = "";
+            for (var k = 0; k < 3; k++) t += (k < tries) ? "🎟️" : '<span class="lost">🎟️</span>';
+            triesEl.innerHTML = t;
+            var zs = zoneSizeFor(round);
+            zoneTagEl.textContent = "Jackpot zone · " + zs + (zs === 1 ? " bulb" : " bulbs");
+          }
+
+          function paintBulbs() {
+            var zone = zoneSet(round);
+            var pos = ((posTotal % N) + N) % N;
+            var active = Math.floor(pos);
+            for (var i = 0; i < N; i++) {
+              var el = bulbs[i];
+              var bg = null, shadow = "none", border = "rgba(0,0,0,.45)";
+              var isZone = zone.indexOf(i) !== -1;
+              if (state === "celebrate") {
+                bg = isZone ? "#ffc61a" : "#6b4f2e";
+                if (isZone) shadow = "0 0 14px rgba(255,198,26,.9)";
+              } else if (i === stoppedIdx && (state === "between" || state === "over")) {
+                var hit = zone.indexOf(i) !== -1;
+                bg = hit ? "#ffc61a" : "#ff5a47";
+                shadow = hit ? "0 0 18px rgba(255,198,26,1)" : "0 0 16px rgba(255,60,40,.9)";
+                border = "#fff2cf";
+              } else if (i === active && state === "running") {
+                bg = "#fff6da"; shadow = "0 0 20px 6px rgba(255,240,200,.95)"; border = "#ffffff";
+              } else if (state === "running") {
+                var behind = ((pos - i) % N + N) % N; // 0..N behind the light
+                if (behind > 0 && behind < 4.5) {
+                  var a = 1 - behind / 4.5;
+                  bg = "rgba(255,214,120," + (0.25 + 0.65 * a).toFixed(2) + ")";
+                  shadow = "0 0 " + Math.round(12 * a) + "px rgba(255,190,80," + (0.7 * a).toFixed(2) + ")";
+                } else if (isZone) {
+                  var pulse = 0.55 + 0.3 * Math.sin(performance.now() / 300);
+                  bg = "#ffc61a"; shadow = "0 0 " + Math.round(8 + 6 * pulse) + "px rgba(255,198,26," + pulse.toFixed(2) + ")";
+                  border = "#ffe27a";
+                } else {
+                  bg = ""; // CSS .bulb default via class below
+                }
+              } else if (isZone) {
+                bg = "#ffc61a"; shadow = "0 0 9px rgba(255,198,26,.55)"; border = "#ffe27a";
+              }
+              if (bg) { el.style.background = bg; el.style.boxShadow = shadow; el.style.borderColor = border; el.classList.remove("zone"); }
+              else { el.style.background = ""; el.style.boxShadow = ""; el.style.borderColor = ""; el.classList.toggle("zone", isZone); }
+            }
+          }
+
+          function loop(ts) {
+            if (state !== "running") { rafId = null; return; }
+            if (lastTs === null) lastTs = ts;
+            var dt = (ts - lastTs) / 1000;
+            lastTs = ts;
+            if (dt > 0.1) dt = 0.1; // tab-switch hiccup guard; timing still timestamp-based
+            posTotal += dt * speedFor(round) * N;
+            var rev = Math.floor(posTotal / N);
+            if (rev !== lastRev) { lastRev = rev; tickSound(); }
+            paintBulbs();
+            rafId = requestAnimationFrame(loop);
+          }
+
+          function setBtn(mode) {
+            if (mode === "stop") { stopBtn.textContent = "■ STOP"; stopBtn.className = "stop-btn"; stopBtn.disabled = false; }
+            else if (mode === "go") { stopBtn.textContent = "▶ GO"; stopBtn.className = "stop-btn go"; stopBtn.disabled = false; }
+            else { stopBtn.textContent = "■ STOP"; stopBtn.className = "stop-btn"; stopBtn.disabled = true; }
+          }
+
+          function startRunning() {
+            state = "running";
+            stoppedIdx = -1;
+            lastTs = null;
+            lastRev = Math.floor(posTotal / N);
+            bannerEl.textContent = "";
+            bigEl.textContent = "Round " + round;
+            smallEl.textContent = "Freeze it on gold!";
+            setBtn("stop");
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(loop);
+            paintBulbs();
+          }
+
+          function startGame() {
+            overPending = false;
+            round = 1; score = 0; tries = 3; roundsCleared = 0;
+            posTotal = 24; stoppedIdx = -1;
+            overEl.classList.remove("show");
+            verdictEl.className = "verdict";
+            verdictEl.textContent = "Clear a round to score — round 1 pays 100.";
+            bannerEl.textContent = "Round 1 — good luck!";
+            bigEl.textContent = "Round 1";
+            smallEl.textContent = "Stop the light on a gold bulb at the top.";
+            renderHud();
+            state = "between";
+            setBtn("wait");
+            paintBulbs();
+            clearTimeout(resumeTimer);
+            resumeTimer = setTimeout(startRunning, 900);
+          }
+
+          function celebrate(next) {
+            state = "celebrate";
+            setBtn("wait");
+            paintBulbs();
+            var steps = 0;
+            var zone = zoneSet(round);
+            clearInterval(chaseTimer);
+            chaseTimer = setInterval(function () {
+              steps++;
+              for (var i = 0; i < N; i++) {
+                var el = bulbs[i];
+                var chaseIdx = steps % N;
+                var d = ((i - chaseIdx) % N + N) % N;
+                if (d === 0) { el.style.background = "#fff6da"; el.style.boxShadow = "0 0 18px 5px rgba(255,240,200,.95)"; }
+                else if (d > N - 5) { el.style.background = "#e8a33d"; el.style.boxShadow = "0 0 10px rgba(255,190,80,.7)"; }
+                else if (zone.indexOf(i) !== -1) { el.style.background = "#ffc61a"; el.style.boxShadow = "0 0 12px rgba(255,198,26,.8)"; }
+                else { el.style.background = ""; el.style.boxShadow = ""; el.classList.remove("zone"); }
+              }
+              if (steps >= N) {
+                clearInterval(chaseTimer);
+                for (var j = 0; j < N; j++) { bulbs[j].style.background = ""; bulbs[j].style.boxShadow = ""; bulbs[j].style.borderColor = ""; }
+                next();
+              }
+            }, 16);
+          }
+
+          function gameOver() {
+            overPending = false;
+            state = "over";
+            setBtn("go");
+            stopBtn.textContent = "▶ PLAY AGAIN";
+            bigEl.textContent = "Game Over";
+            smallEl.textContent = "Final score " + score + " · " + roundsCleared + (roundsCleared === 1 ? " round" : " rounds") + " cleared.";
+            bannerEl.textContent = "";
+            if (score > best) {
+              best = score;
+              try { localStorage.setItem("stopTheLightBest", String(best)); } catch (e) {}
+            }
+            finalScoreEl.textContent = "Final score: " + score;
+            finalRoundsEl.textContent = "Rounds cleared: " + roundsCleared;
+            finalBestEl.textContent = "Best score: " + best;
+            overEl.classList.add("show");
+            renderHud();
+            paintBulbs();
+          }
+
+          function pressStop() {
+            if (state === "ready" || state === "over") { startGame(); return; }
+            if (state === "between") { if (overPending) return; clearTimeout(resumeTimer); startRunning(); return; }
+            if (state !== "running") return;
+            // Freeze on the bulb nearest the light's true position right now.
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = null;
+            var pos = ((posTotal % N) + N) % N;
+            var idx = Math.round(pos) % N;
+            stoppedIdx = idx;
+            var zone = zoneSet(round);
+            var hit = zone.indexOf(idx) !== -1;
+            var dist = distToZone(idx, round);
+            if (hit) {
+              var earned = round * 100;
+              score += earned;
+              roundsCleared++;
+              verdictEl.className = "verdict good";
+              verdictEl.textContent = "🎉 Right on the gold! +" + earned + " points.";
+              bigEl.textContent = "+" + earned;
+              smallEl.textContent = "Round " + round + " cleared.";
+              renderHud();
+              winSound();
+              var clearedRound = round;
+              celebrate(function () {
+                round = clearedRound + 1;
+                renderHud();
+                bannerEl.textContent = "Round " + round + " — faster!";
+                bigEl.textContent = "Round " + round;
+                smallEl.textContent = zoneSizeFor(round) < zoneSizeFor(clearedRound)
+                  ? "The gold zone just shrank to " + zoneSizeFor(round) + (zoneSizeFor(round) === 1 ? " bulb" : " bulbs") + "!"
+                  : "Same gold, quicker light.";
+                state = "between";
+                stoppedIdx = -1;
+                paintBulbs();
+                clearTimeout(resumeTimer);
+                resumeTimer = setTimeout(startRunning, 1100);
+              });
+            } else {
+              tries--;
+              missSound();
+              verdictEl.className = "verdict bad";
+              verdictEl.textContent = "Missed by " + dist + (dist === 1 ? " bulb" : " bulbs") + "! " +
+                (tries > 0 ? tries + (tries === 1 ? " try" : " tries") + " left — same round, try again." : "That was the last try.");
+              bigEl.textContent = "Missed by " + dist + "!";
+              smallEl.textContent = "The gold sits at the top of the ring.";
+              renderHud();
+              state = "between";
+              paintBulbs();
+              if (tries <= 0) {
+                overPending = true;
+                clearTimeout(resumeTimer);
+                resumeTimer = setTimeout(gameOver, 1300);
+                setBtn("wait");
+              } else {
+                setBtn("go");
+                stopBtn.textContent = "▶ GO AGAIN";
+              }
+            }
+          }
+
+          stopBtn.addEventListener("click", pressStop);
+          document.getElementById("stlAgain").addEventListener("click", startGame);
+          ringEl.addEventListener("pointerdown", function (e) { e.preventDefault(); pressStop(); });
+          document.addEventListener("keydown", function (e) {
+            if (e.code === "Space" && !panelLight.classList.contains("hidden")) {
+              var tag = (document.activeElement && document.activeElement.tagName) || "";
+              if (tag !== "INPUT" && tag !== "TEXTAREA") { e.preventDefault(); pressStop(); }
+            }
+          });
+
+          renderHud();
+          paintBulbs();
+
+          return {
+            pressStop: pressStop,
+            startGame: startGame,
+            pause: function () {
+              if (state === "running") {
+                if (rafId) cancelAnimationFrame(rafId);
+                rafId = null; lastTs = null;
+                state = "between";
+                setBtn("go");
+                stopBtn.textContent = "▶ GO";
+                bigEl.textContent = "Paused";
+                smallEl.textContent = "Tap GO when you're back.";
+              } else if (state === "between" && !overPending) {
+                clearTimeout(resumeTimer);
+              }
+            },
+            getState: function () {
+              return {
+                state: state, round: round, score: score, tries: tries,
+                roundsCleared: roundsCleared, best: best,
+                posTotal: posTotal, posInRing: ((posTotal % N) + N) % N,
+                speedRps: speedFor(round), zoneSize: zoneSizeFor(round),
+                zone: zoneSet(round), stoppedIdx: stoppedIdx,
+                distToZone: function (idx) { return distToZone(idx, round); }
+              };
+            },
+            setPosition: function (bulbFloat) { posTotal = bulbFloat; paintBulbs(); },
+            speedFor: speedFor,
+            zoneSizeFor: zoneSizeFor
+          };
+        })();
+        // Harness for verification: drives the real stop handler.
+        window.StopTheLightTest = STL;
+
+        /* =========================================================
+           SKEE-BALL
+           Hold to charge power, slide to aim, release to roll.
+           The resting spot is set by power + aim alone — the same
+           roll always lands the same way, so skill is real.
+           ========================================================= */
+        var canvas = document.getElementById("lane");
+        var ctx = canvas.getContext("2d");
+        var W = 400, H = 560;
+        var CX = 200, RING_Y = 150, START_Y = 505;
+        var POCKETS = [{ x: 52, y: 66 }, { x: 348, y: 66 }];
+        var RINGS = [
+          { r: 22, pts: 50 }, { r: 44, pts: 40 }, { r: 68, pts: 30 },
+          { r: 94, pts: 20 }, { r: 122, pts: 10 }
+        ];
+        var skScore = 0, skBall = 0, skBest = 0, skOver = false;
+        var skScoreEl = document.getElementById("skScore");
+        var skBallNumEl = document.getElementById("skBallNum");
+        var skBallsEl = document.getElementById("skBalls");
+        var skBestEl = document.getElementById("skBest");
+        var skVerdictEl = document.getElementById("skVerdict");
+        var powerFill = document.getElementById("powerFill");
+        var skOverEl = document.getElementById("skOver");
+        try { skBest = parseInt(localStorage.getItem("skeeBallBest") || "0", 10) || 0; } catch (e) { skBest = 0; }
+
+        var charging = false, power = 0, aim = 0, chargeStart = 0;
+        var ballAnim = null; // {t0, fromX, fromY, toX, toY, pts}
+        var restingBall = null;
+
+        function scoreAt(x, y) {
+          for (var p = 0; p < POCKETS.length; p++) {
+            var pd = Math.hypot(x - POCKETS[p].x, y - POCKETS[p].y);
+            if (pd <= 21) return 100;
+          }
+          var d = Math.hypot(x - CX, y - RING_Y);
+          for (var i = 0; i < RINGS.length; i++) if (d <= RINGS[i].r) return RINGS[i].pts;
+          return 0;
+        }
+
+        function drawLane() {
+          ctx.clearRect(0, 0, W, H);
+          // lane wood
+          var g = ctx.createLinearGradient(0, 0, 0, H);
+          g.addColorStop(0, "#5a3a22"); g.addColorStop(1, "#7a4e2a");
+          ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+          // side rails
+          ctx.fillStyle = "#2b1a12"; ctx.fillRect(0, 0, 16, H); ctx.fillRect(W - 16, 0, 16, H);
+          // back wall
+          ctx.fillStyle = "#33200f"; ctx.fillRect(16, 0, W - 32, 34);
+          ctx.fillStyle = "#ffc61a"; ctx.font = "900 15px Nunito, sans-serif"; ctx.textAlign = "center";
+          ctx.fillText("★ SKEE-BALL ★", CX, 22);
+          // corner pockets
+          for (var p = 0; p < POCKETS.length; p++) {
+            ctx.beginPath(); ctx.arc(POCKETS[p].x, POCKETS[p].y, 21, 0, Math.PI * 2);
+            ctx.fillStyle = "#17100b"; ctx.fill();
+            ctx.lineWidth = 3; ctx.strokeStyle = "#ffc61a"; ctx.stroke();
+            ctx.fillStyle = "#ffc61a"; ctx.font = "900 13px Nunito, sans-serif";
+            ctx.fillText("100", POCKETS[p].x, POCKETS[p].y + 4.5);
+          }
+          // rings, outside in
+          var ringColors = ["#0e9f8a", "#2e7fc2", "#7fb069", "#e8a33d", "#d63a2f"];
+          for (var i = RINGS.length - 1; i >= 0; i--) {
+            ctx.beginPath(); ctx.arc(CX, RING_Y, RINGS[i].r, 0, Math.PI * 2);
+            ctx.fillStyle = ringColors[i]; ctx.fill();
+            ctx.lineWidth = 2.5; ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.stroke();
+          }
+          ctx.beginPath(); ctx.arc(CX, RING_Y, RINGS[0].r, 0, Math.PI * 2);
+          ctx.fillStyle = "#d63a2f"; ctx.fill();
+          ctx.fillStyle = "#fff";
+          ctx.font = "900 15px Nunito, sans-serif";
+          ctx.fillText("50", CX, RING_Y + 5);
+          ctx.font = "900 13px Nunito, sans-serif";
+          ctx.fillText("40", CX, RING_Y - 33);
+          ctx.fillText("30", CX, RING_Y - 57);
+          ctx.fillText("20", CX, RING_Y - 82);
+          ctx.fillText("10", CX, RING_Y - 108);
+          // ramp guide lines
+          ctx.strokeStyle = "rgba(255,233,189,.18)"; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(70, H); ctx.lineTo(120, 300); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(W - 70, H); ctx.lineTo(W - 120, 300); ctx.stroke();
+          // aim guide while charging
+          if (charging && !ballAnim) {
+            ctx.strokeStyle = "rgba(255,255,255,.4)"; ctx.setLineDash([6, 8]); ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(CX + aim * 60, START_Y);
+            ctx.lineTo(CX + aim * 110, START_Y - 190); ctx.stroke();
+            ctx.setLineDash([]);
+          }
+          // ball
+          var bx = CX + aim * 60, by = START_Y, scale = 1;
+          if (ballAnim) {
+            var t = Math.min(1, (performance.now() - ballAnim.t0) / 950);
+            var e = 1 - Math.pow(1 - t, 3);
+            bx = ballAnim.fromX + (ballAnim.toX - ballAnim.fromX) * e;
+            by = ballAnim.fromY + (ballAnim.toY - ballAnim.fromY) * e;
+            scale = 1 + 0.45 * Math.sin(Math.PI * t);
+          } else if (restingBall) {
+            bx = restingBall.x; by = restingBall.y;
+          }
+          ctx.beginPath(); ctx.arc(bx, by + 4, 17 * scale, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(0,0,0,.3)"; ctx.fill();
+          var bg2 = ctx.createRadialGradient(bx - 6, by - 7, 3, bx, by, 18 * scale);
+          bg2.addColorStop(0, "#ff8a75"); bg2.addColorStop(1, "#b3241a");
+          ctx.beginPath(); ctx.arc(bx, by, 17 * scale, 0, Math.PI * 2);
+          ctx.fillStyle = bg2; ctx.fill();
+          ctx.lineWidth = 2; ctx.strokeStyle = "rgba(0,0,0,.4)"; ctx.stroke();
+          // result popup
+          if (restingBall && restingBall.pts !== null && performance.now() - restingBall.at < 1600) {
+            ctx.font = "900 30px Bungee, 'Arial Black', sans-serif";
+            ctx.fillStyle = restingBall.pts > 0 ? "#ffc61a" : "#e8cd97";
+            ctx.strokeStyle = "rgba(0,0,0,.55)"; ctx.lineWidth = 5;
+            var label = restingBall.pts > 0 ? "+" + restingBall.pts : "MISS";
+            ctx.strokeText(label, CX, 330); ctx.fillText(label, CX, 330);
+          }
+        }
+
+        var laneRaf = null;
+        function laneLoop() { drawLane(); laneRaf = requestAnimationFrame(laneLoop); }
+        laneRaf = requestAnimationFrame(laneLoop);
+
+        function renderSkHud() {
+          skScoreEl.textContent = skScore;
+          skBestEl.textContent = skBest;
+          skBallNumEl.textContent = Math.min(skBall + 1, 9) + " / 9";
+          var s = "";
+          for (var k = 0; k < 9; k++) s += (k < skBall) ? '<span class="used">🔴</span>' : "🔴";
+          skBallsEl.innerHTML = s;
+        }
+
+        function newSkeeGame() {
+          skScore = 0; skBall = 0; skOver = false;
+          ballAnim = null; restingBall = null; charging = false; power = 0;
+          powerFill.style.width = "0%";
+          skOverEl.classList.remove("show");
+          skVerdictEl.className = "verdict";
+          skVerdictEl.textContent = "Hold on the lane to charge, slide to aim, let go to roll.";
+          renderSkHud();
+        }
+
+        function launchBall() {
+          var p = power / 100;
+          var dist = 60 + p * 430;                    // px of travel up the lane
+          var toY = START_Y - dist;
+          var toX = CX + aim * 110;
+          if (toY < 40) toY = 40;                      // back wall
+          toX = Math.max(30, Math.min(W - 30, toX));
+          var pts = scoreAt(toX, toY);
+          ballAnim = { t0: performance.now(), fromX: CX + aim * 60, fromY: START_Y, toX: toX, toY: toY, pts: pts };
+          tone(300 + p * 300, 0, 0.12, "sine", 0.04);
+          setTimeout(function () {
+            if (!ballAnim) return;
+            var landed = ballAnim;
+            ballAnim = null;
+            restingBall = { x: landed.toX, y: landed.toY, pts: landed.pts, at: performance.now() };
+            skBall++;
+            if (landed.pts > 0) {
+              skScore += landed.pts;
+              thockSound();
+              if (landed.pts >= 50) { tone(784, 0.05, 0.15, "triangle", 0.08); tone(1046, 0.16, 0.22, "triangle", 0.08); }
+              skVerdictEl.textContent = landed.pts === 100 ? "💯 Corner pocket! +100!" : "Nice roll! +" + landed.pts + (skBall < 9 ? " — " + (9 - skBall) + " balls left." : "");
+            } else {
+              missSound();
+              skVerdictEl.textContent = toY <= 41 ? "Off the back wall — ease off the power." :
+                (Math.hypot(landed.toX - CX, landed.toY - RING_Y) > 122 && landed.toY > RING_Y ? "Too soft — it never reached the rings." : "Just missed the rings — adjust the aim.");
+              if (skBall < 9) skVerdictEl.textContent += " " + (9 - skBall) + " balls left.";
+            }
+            if (skBall >= 9) {
+              skOver = true;
+              if (skScore > skBest) {
+                skBest = skScore;
+                try { localStorage.setItem("skeeBallBest", String(skBest)); } catch (e) {}
+              }
+              document.getElementById("skFinalScore").textContent = "Final score: " + skScore;
+              document.getElementById("skFinalBest").textContent = "Best score: " + skBest;
+              setTimeout(function () { skOverEl.classList.add("show"); }, 700);
+              skVerdictEl.textContent = "That's all nine balls — final score " + skScore + ".";
+            }
+            renderSkHud();
+          }, 980);
+        }
+
+        function lanePoint(e) {
+          var r = canvas.getBoundingClientRect();
+          return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+        }
+        canvas.addEventListener("pointerdown", function (e) {
+          if (skOver || ballAnim) return;
+          e.preventDefault();
+          canvas.setPointerCapture(e.pointerId);
+          charging = true; power = 0; chargeStart = performance.now();
+          aim = Math.max(-1, Math.min(1, (lanePoint(e).x - 0.5) * 2));
+          ac();
+        });
+        canvas.addEventListener("pointermove", function (e) {
+          if (!charging) return;
+          aim = Math.max(-1, Math.min(1, (lanePoint(e).x - 0.5) * 2));
+        });
+        function endCharge() {
+          if (!charging) return;
+          charging = false;
+          powerFill.style.width = "0%";
+          powerFill.classList.remove("hot");
+          if (power > 4) launchBall();
+          power = 0;
+        }
+        canvas.addEventListener("pointerup", endCharge);
+        canvas.addEventListener("pointercancel", endCharge);
+        setInterval(function () {
+          if (charging) {
+            power = Math.min(100, (performance.now() - chargeStart) / 11); // ~1.1s to full
+            powerFill.style.width = power + "%";
+            powerFill.classList.toggle("hot", power > 82);
+          }
+        }, 30);
+        document.getElementById("skNew").addEventListener("click", newSkeeGame);
+        document.getElementById("skAgain").addEventListener("click", newSkeeGame);
+
+        renderSkHud();
+        drawLane();
+
+        // Harness for verification of the skee-ball scoring math.
+        window.SkeeBallTest = { scoreAt: scoreAt, newGame: newSkeeGame,
+          getState: function () { return { score: skScore, ball: skBall, best: skBest, over: skOver }; } };
+      })();
+    </script>
+    <script data-goatcounter="https://jesuslovestyler.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+  </body>
+</html>
